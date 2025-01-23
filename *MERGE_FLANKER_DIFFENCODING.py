@@ -20,72 +20,8 @@ import os
 import codecs
 import pandas as pd
 import glob
+
 path = '/Users/khosravip2/Downloads/flanker_data/NEW/'
-
-#
-# Set the encoding for each file type
-utf8_encoding = "utf-8"
-utf16_encoding = "utf-16"
-
-# Set the header row for each file type
-
-utf8_header = ['ExperimentName', 'Subject',	'Session', 'Clock.Information',
-               'DataFile.Basename', 'Display.RefreshRate', 'ExperimentVersion',
-               'Group', 'RandomSeed', 'RuntimeCapabilities', 'RuntimeVersion',
-               'RuntimeVersionExpected', 'SessionDate', 'SessionStartDateTimeUtc',
-               'SessionTime', 'StudioVersion',	 'Block', 'GetReady.Duration',
-               'GetReady.OffsetDelay',	'GetReady.OnsetDelay',	'GetReady.OnsetTime',
-               'Procedure[Block]',	'RunList', 'RunList.Cycle',	 'RunList.Sample',
-               'Running[Block]', 'RunNumber', 'Runrest.OffsetTime',
-               'Runrest.OnsetTime', 'WaitingForScanner.OffsetTime',
-               'Trial', 'Blankwait.OnsetTime',	 'FeedBackBlocks', 'FeedBackBlocks.Cycle'
-               'FeedBackBlocks.Sample', 'Procedure[Trial]', 'Running[Trial]',
-               'SubTrial',	'ArrowImage',	'CellNumber', 'CorrectAnswer',
-               'Direction', 'Feed', 'FixationITI.OffsetDelay',
-               'FixationITI.OffsetTime',	'FixationITI.OnsetDelay',
-               'FixationITI.OnsetTime',	'FixationITI.TargetOffsetTime',
-               'FixationITI.TargetOnsetTime',	'Flanker', 'FlankerImage.ACC',
-               'FlankerImage.CRESP	', 'FlankerImage.Duration',
-               'FlankerImage.OffsetDelay', 'FlankerImage.OffsetTime',
-               'FlankerImage.OnsetDelay',	'FlankerImage.OnsetTime	',
-               'FlankerImage.RESP',	'FlankerImage.RT',	'FlankerImage.RTTime',
-               'FlankerImage.Tag', 'FlankerImage.TargetOffsetTime',
-               'FlankerImage.TargetOnsetTime',	 'ITI',	'ITILIST', 'Procedure[SubTrial]',
-               'RespType',	'RespWindow.Duration',	'RespWindow.OffsetDelay',
-               'RespWindow.OffsetTime', 'RespWindow.OnsetDelay',
-               'RespWindow.OnsetTime',	'RespWindow.TargetOffsetTime',
-               'RespWindow.TargetOnsetTime', 'Running[SubTrial]',	'TotN',
-               'TrialList',	'TrialList.Cycle',	'TrialList.Sample',
-               'TrialNumber',	'TrialType']
-
-utf16_header = ['ExperimentName', 'Subject',	'Session', 'Clock.Information',
-                'DataFile.Basename', 'Display.RefreshRate', 'ExperimentVersion',
-                'Group', 'RandomSeed', 'RuntimeCapabilities', 'RuntimeVersion',
-                'RuntimeVersionExpected', 'SessionDate', 'SessionStartDateTimeUtc',
-                'SessionTime', 'StudioVersion',	 'Block', 'GetReady.Duration',
-                'GetReady.OffsetDelay',	'GetReady.OnsetDelay',	'GetReady.OnsetTime',
-                'Procedure[Block]',	'RunList', 'RunList.Cycle',	 'RunList.Sample',
-                'Running[Block]', 'RunNumber', 'Runrest.OffsetTime',
-                'Runrest.OnsetTime', 'WaitingForScanner.OffsetTime',
-                'Trial', 'Blankwait.OnsetTime',	 'FeedBackBlocks', 'FeedBackBlocks.Cycle'
-                'FeedBackBlocks.Sample', 'Procedure[Trial]', 'Running[Trial]',
-                'SubTrial',	'ArrowImage',	'CellNumber', 'CorrectAnswer',
-                'Direction', 'Feed', 'FixationITI.OffsetDelay',
-                'FixationITI.OffsetTime',	'FixationITI.OnsetDelay',
-                'FixationITI.OnsetTime',	'FixationITI.TargetOffsetTime',
-                'FixationITI.TargetOnsetTime',	'Flanker', 'FlankerImage.ACC',
-                'FlankerImage.CRESP	', 'FlankerImage.Duration',
-                'FlankerImage.OffsetDelay', 'FlankerImage.OffsetTime',
-                'FlankerImage.OnsetDelay',	'FlankerImage.OnsetTime	',
-                'FlankerImage.RESP',	'FlankerImage.RT',	'FlankerImage.RTTime',
-                'FlankerImage.Tag', 'FlankerImage.TargetOffsetTime',
-                'FlankerImage.TargetOnsetTime',	 'ITI',	'ITILIST', 'Procedure[SubTrial]',
-                'RespType',	'RespWindow.Duration',	'RespWindow.OffsetDelay',
-                'RespWindow.OffsetTime', 'RespWindow.OnsetDelay',
-                'RespWindow.OnsetTime',	'RespWindow.TargetOffsetTime',
-                'RespWindow.TargetOnsetTime', 'Running[SubTrial]', 'TotN',
-                'TrialList',	'TrialList.Cycle',	'TrialList.Sample',
-                'TrialNumber',	'TrialType']
 
 # Set the output file name and encoding
 output_file = "combined_file_new.txt"
@@ -94,6 +30,8 @@ output_encoding = "utf-8"
 data = []
 # Get a list of file names with full path that match the pattern "*.txt"
 files = glob.glob(path + "/*.txt")
+
+header_added = False # flag to check if the header has been added
 
 # Loop through each file in the directory
 for filename in files:
@@ -110,15 +48,18 @@ for filename in files:
         else:
             # Assume the file is encoded in UTF-8
             decoded_text = contents.decode("utf-8")
-            # Check if the header row has already been added
-        if ''.join(utf16_header) in decoded_text and ''.join(utf16_header) not in data:
-            data.append(list(utf16_header))
-        elif ''.join(utf8_header) in decoded_text and ''.join(utf8_header) not in data:
-            data.append(list(utf8_header))
-            # Append the remaining lines to the data list
-            data.extend(line.strip()
-                        for line in decoded_text.split('\n') if line.strip())
-
+        
+      # Split the file content into lines
+        lines = decoded_text.split('\n')
+      
+      # Extract the header dynamically from the first file
+        if not header_added:
+            header = lines[0].strip()  # Take the first line as the header
+            data.append(header)
+            header_added = True
+        
+        # Append the rest of the data, skipping the header
+        data.extend(line.strip() for line in lines[1:] if line.strip())
 
 # Write the combined data to the output file
 if data:
@@ -126,23 +67,6 @@ if data:
         for line in data:
             f.write("\n".join(line) + "\n")
 
+print(f"Data combined and saved to {output_file}")
 
-with open('output.txt', 'w') as outfile:
-    # Read the header from the first file
-    with open('/Users/khosravip2/Downloads/flanker_data/combined_file_2.txt', 'r') as f:
-        header = f.readline().strip()
 
-    # Write the header to the output file
-    outfile.write(header + '\n')
-
-    # Append the contents of the first file to the output file
-    with open('/Users/khosravip2/Downloads/flanker_data/combined_file_2.txt', 'r') as f:
-        next(f)  # skip the header
-        for line in f:
-            outfile.write(line)
-
-    # Append the contents of the second file to the output file, skipping the header
-    with open('/Users/khosravip2/Downloads/flanker_data/combined_file_new.txt', 'r') as f:
-        next(f)  # skip the header
-        for line in f:
-            outfile.write(line)
